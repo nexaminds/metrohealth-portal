@@ -46,7 +46,7 @@ groups:
         for: 30s
         annotations:
           summary: MetroHealth patient portal registration validation error rate exceeded critical threshold
-          description: "validation_failure_rate (5m) = {{ printf \"%.3f\" $values.A.Value }} (threshold_critical=0.10). Empty/malformed inputs are passing client validation and crashing downstream MRN linkage. PHI exposure: alert metadata only."
+          description: "validation_failure_rate (5m) {{ with $values.A.Value }}= {{ printf \"%.3f\" . }}{{ else }}breached threshold{{ end }} (threshold_critical=0.10). Empty/malformed inputs are passing client validation and crashing downstream MRN linkage. PHI exposure: alert metadata only."
           runbook_url: https://wiki.metrohealth.example.com/runbooks/patient-portal/register-validation-failures
           dashboard_url: http://localhost:3001/d/metrohealth-patient-portal/metrohealth-patient-portal
         labels:
