@@ -4,7 +4,7 @@ import {
   validateLastName,
   validateDOB,
   validateSSN4,
-  validatePhone,
+  validatePhoneMobile,
   validateZip,
 } from "../src/registration-validator";
 
@@ -24,11 +24,12 @@ describe("baseline registration validators", () => {
   it("validateZip accepts a 5-digit ZIP", () => {
     expect(validateZip("02101").ok).toBe(true);
   });
-  it("validatePhone accepts +1 E.164", () => {
-    expect(validatePhone("+15551234567").ok).toBe(true);
+  it("validatePhoneMobile accepts +1 E.164", () => {
+    expect(validatePhoneMobile("+15551234567").ok).toBe(true);
   });
   it("validateDOB rejects under-18 DOB", () => {
-    const next = new Date(); next.setFullYear(next.getFullYear() - 5);
-    expect(validateDOB(next.toISOString().slice(0,10)).ok).toBe(false);
+    const next = new Date();
+    next.setFullYear(next.getFullYear() - 5);
+    expect(validateDOB(next.toISOString().slice(0, 10)).ok).toBe(false);
   });
 });
