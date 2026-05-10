@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { validateEmail, validateStep2 } from "../../../incident/sample-app/src/registration-validator";
+import { validateEmail, validateStep2 } from "../src/registration-validator";
 
 describe("MetroHealth registration email validation regression", () => {
   it("rejects an email with an empty local part", () => {
