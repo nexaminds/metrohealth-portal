@@ -1,0 +1,81 @@
+# Append these three services to /mnt/c/Users/Bernardo/agent-ops-local/docker-compose.yml
+# (which already runs Langfuse + Postgres + Redis on the agent-ops-network).
+#
+# After appending, also add the two named volumes at the bottom:
+#   prometheus_data:
+#     driver: local
+#   grafana_data:
+#     driver: local
+#
+# Then:
+#   cd /mnt/c/Users/Bernardo/agent-ops-local
+#   docker compose up -d portal-app prometheus grafana
+#
+# This file is documentation. Do not docker-compose against it directly.
+
+services:
+  # Patient-portal static site + Prometheus /metrics + /events POST + /grafana-webhook
+  portal-app:
+    image: node:20-alpine
+    container_name: nexai-portal-app
+    restart: unless-stopped
+    working_dir: /app
+    command: sh -c 'npm install --omit=dev --silent && node server.js'
+    environment:
+      PORT: "8080"
+      STATIC_DIR: /portal
+      APP_NAME: patient-portal
+      APP_ENV: prod
+      # Posts AS @nexai-sre so TARS (in #nexai-manager) sees an inbound from
+      # another bot. Bots cannot receive their own messages, so we cannot
+      # post AS @nexai-manager and expect TARS to react.
+      SLACK_BOT_TOKEN: "${MURPH_SLACK_BOT_TOKEN:-<set-MURPH_SLACK_BOT_TOKEN-in-env>}"
+      SLACK_CHANNEL: "${NEXAI_MANAGER_CHANNEL:-C0B2P65UNR3}"
+      PLAYBOOK_PATH: "_demo/healthcare-metrohealth/incident-v2/_tars-incident-playbook-v2.md"
+    volumes:
+      - /mnt/c/Users/Bernardo/NexAI-Agents/_demo/healthcare-metrohealth/portal-app/metrics-server:/app
+      - /mnt/c/Users/Bernardo/NexAI-Agents/_demo/healthcare-metrohealth/portal-app:/portal:ro
+    ports:
+      - "8088:8080"
+
+  # Prometheus — scrapes portal-app every 5s
+  prometheus:
+    image: prom/prometheus:v2.55.0
+    container_name: nexai-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=24h'
+    volumes:
+      - /mnt/c/Users/Bernardo/NexAI-Agents/_demo/healthcare-metrohealth/portal-app/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9094:9090"
+    depends_on:
+      - portal-app
+
+  # Grafana — provisioned dashboard + alert rule + webhook contact-point
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: nexai-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_FEATURE_TOGGLES_ENABLE: alertingSimplifiedRouting,alertingQueryAndExpressionsStepMode
+    volumes:
+      - /mnt/c/Users/Bernardo/NexAI-Agents/_demo/healthcare-metrohealth/portal-app/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+
+# Add to the volumes: block:
+#   prometheus_data:
+#     driver: local
+#   grafana_data:
+#     driver: local

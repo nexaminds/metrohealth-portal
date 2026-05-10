@@ -1,0 +1,22 @@
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: nexai-manager-slack
+    receivers:
+      - uid: nexai-manager-slack-receiver
+        # Webhook → portal-app /grafana-webhook → Slack chat.postMessage as @nexai-manager.
+        # Bypasses Grafana's built-in Slack notifier (which silently no-ops on 11.3 when
+        # provisioned with token via secureSettings — observed 2026-05-09).
+        type: webhook
+        settings:
+          url: http://portal-app:8080/grafana-webhook
+          httpMethod: POST
+
+policies:
+  - orgId: 1
+    receiver: nexai-manager-slack
+    group_by: ['alertname', 'service']
+    group_wait: 10s
+    group_interval: 60s
+    repeat_interval: 4h

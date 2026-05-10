@@ -1,0 +1,67 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: metrohealth-portal-rules
+    folder: MetroHealth
+    interval: 30s
+    rules:
+      - uid: metrohealth-portal-validation-error-rate
+        title: PatientPortalRegistrationValidationErrorRate
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              expr: sum(rate(metrohealth_portal_register_validation_failures_total[5m])) / clamp_min(sum(rate(metrohealth_portal_register_attempts_total[5m])), 0.001)
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              conditions:
+                - evaluator:
+                    params: [0.10]
+                    type: gt
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+              expression: A
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Alerting
+        for: 30s
+        annotations:
+          summary: MetroHealth patient portal registration validation error rate exceeded critical threshold
+          description: "validation_failure_rate (5m) = {{ printf \"%.3f\" $values.A.Value }} (threshold_critical=0.10). Empty/malformed inputs are passing client validation and crashing downstream MRN linkage. PHI exposure: alert metadata only."
+          runbook_url: https://wiki.metrohealth.example.com/runbooks/patient-portal/register-validation-failures
+          dashboard_url: http://localhost:3001/d/metrohealth-patient-portal/metrohealth-patient-portal
+        labels:
+          severity: sev2
+          service: patient-portal
+          team: patient-experience
+          client: metrohealth
+          compliance_tier: tier_3_phi
+          env: prod
+          monitor_id: grafana-alert-rule-7821
+          alertname: PatientPortalRegistrationValidationErrorRate
+        notification_settings:
+          receiver: nexai-manager-slack
+          group_by: [alertname, service]
+          group_wait: 10s
+          group_interval: 60s
+          repeat_interval: 4h
+        isPaused: true
