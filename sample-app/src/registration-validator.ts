@@ -105,6 +105,73 @@ export function validateZip(value: string): ValidationResult {
 }
 
 // ------------------------------------------------------------------
+// Step 3 — Insurance validators
+// ------------------------------------------------------------------
+
+// Member IDs across our supported payors are alphanumeric, 6–20 chars,
+// uppercased on submit. Some BCBS plans prefix with a 3-letter alpha code
+// (e.g. "XOF1234567"), Aetna uses pure digits — so we accept both shapes.
+const MEMBER_ID_REGEX = /^[A-Z0-9]{6,20}$/;
+
+export function validateMemberId(value: string): ValidationResult {
+  if (!value || value.trim().length === 0) {
+    return { ok: false, code: "MEMBER_ID_REQUIRED", field: "member_id" };
+  }
+  if (!MEMBER_ID_REGEX.test(value)) {
+    return { ok: false, code: "MEMBER_ID_INVALID_FORMAT", field: "member_id" };
+  }
+  return { ok: true };
+}
+
+// Group numbers are typically 4–10 digits; a small number of self-funded
+// employer groups use a trailing alpha suffix ("123456A"), so allow that.
+const GROUP_NUMBER_REGEX = /^\d{4,10}[A-Z]?$/;
+
+export function validateGroupNumber(value: string): ValidationResult {
+  if (!value || value.trim().length === 0) {
+    return { ok: false, code: "GROUP_NUMBER_REQUIRED", field: "group_number" };
+  }
+  if (!GROUP_NUMBER_REGEX.test(value)) {
+    return {
+      ok: false,
+      code: "GROUP_NUMBER_INVALID_FORMAT",
+      field: "group_number",
+    };
+  }
+  return { ok: true };
+}
+
+export function validatePlanEffectiveDate(value: string): ValidationResult {
+  if (!value) {
+    return {
+      ok: false,
+      code: "PLAN_EFFECTIVE_DATE_REQUIRED",
+      field: "plan_effective_date",
+    };
+  }
+  const parsed = new Date(value);
+  if (isNaN(parsed.getTime())) {
+    return {
+      ok: false,
+      code: "PLAN_EFFECTIVE_DATE_INVALID",
+      field: "plan_effective_date",
+    };
+  }
+  // Coverage cannot start more than 90 days in the future — payors won't
+  // recognize the policy yet and downstream eligibility checks will 404.
+  const ninetyDaysOut = new Date();
+  ninetyDaysOut.setDate(ninetyDaysOut.getDate() + 90);
+  if (parsed > ninetyDaysOut) {
+    return {
+      ok: false,
+      code: "PLAN_EFFECTIVE_DATE_TOO_FAR_FUTURE",
+      field: "plan_effective_date",
+    };
+  }
+  return { ok: true };
+}
+
+// ------------------------------------------------------------------
 // Compound validator used by the /register handler
 // ------------------------------------------------------------------
 
@@ -119,6 +186,12 @@ export interface RegistrationStep2Input {
   email: string;
   phone_mobile: string;
   zip: string;
+}
+
+export interface RegistrationStep3Input {
+  member_id: string;
+  group_number: string;
+  plan_effective_date: string;
 }
 
 export function validateStep1(input: RegistrationStep1Input): ValidationResult {
@@ -137,6 +210,16 @@ export function validateStep2(input: RegistrationStep2Input): ValidationResult {
     validateEmail(input.email),
     validatePhoneMobile(input.phone_mobile),
     validateZip(input.zip),
+  ];
+  const failed = checks.find((c) => c.ok === false);
+  return failed ?? { ok: true };
+}
+
+export function validateStep3(input: RegistrationStep3Input): ValidationResult {
+  const checks = [
+    validateMemberId(input.member_id),
+    validateGroupNumber(input.group_number),
+    validatePlanEffectiveDate(input.plan_effective_date),
   ];
   const failed = checks.find((c) => c.ok === false);
   return failed ?? { ok: true };

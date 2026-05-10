@@ -5,13 +5,16 @@
 import {
   validateStep1,
   validateStep2,
+  validateStep3,
   RegistrationStep1Input,
   RegistrationStep2Input,
+  RegistrationStep3Input,
 } from "./registration-validator";
 
 export interface RegisterRequest {
   step1: RegistrationStep1Input;
   step2: RegistrationStep2Input;
+  step3: RegistrationStep3Input;
   consent_hipaa_authorization: boolean;
 }
 
@@ -47,7 +50,17 @@ export async function handleRegister(
     };
   }
 
-  // (downstream: probabilistic match, MRN linking, send verify code)
+  const step3Result = validateStep3(req.step3);
+  if (!step3Result.ok) {
+    return {
+      status: "validation_error",
+      error_code: step3Result.code,
+      field: step3Result.field,
+    };
+  }
+
+  // (downstream: probabilistic match, MRN linking, send verify code,
+  // payor eligibility check via 270/271)
   // out of scope for this validator module
   return { status: "ok" };
 }
