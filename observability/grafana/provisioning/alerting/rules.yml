@@ -64,4 +64,4 @@ groups:
           group_wait: 10s
           group_interval: 60s
           repeat_interval: 4h
-        isPaused: true
+        isPaused: false
