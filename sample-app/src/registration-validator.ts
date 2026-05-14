@@ -66,7 +66,7 @@ export function validateSSN4(value: string): ValidationResult {
 
 // RFC 5322-lite. Intentionally pragmatic: we trust the verify-code step
 // to catch deliverability; we just block obviously malformed input here.
-const EMAIL_REGEX = /^[^\s@]*@[^\s@]+\.[^\s@]+$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function validateEmail(value: string): ValidationResult {
   // Empty / null check: required field, never accept empty.
@@ -76,6 +76,9 @@ export function validateEmail(value: string): ValidationResult {
   // Length guard before regex (RFC 5322 max is 254).
   if (value.length > 254) {
     return { ok: false, code: "EMAIL_TOO_LONG", field: "email" };
+  }
+  if (value.length === 0) {
+    return { ok: false, code: "EMAIL_INVALID_LENGTH", field: "email" };
   }
   if (!EMAIL_REGEX.test(value)) {
     return { ok: false, code: "EMAIL_INVALID_FORMAT", field: "email" };
