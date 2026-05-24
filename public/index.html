@@ -917,22 +917,18 @@
 
     // ──────────────── Validators (preserve exports for the regression test) ────────────────
     function emailRegex() {
-      // Buggy version: + → * in local-part. Fixed: requires at least one local-part char.
-      return useRegression
-        ? /^[A-Za-z0-9._%+-]*@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
-        : /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+      // Fixed: require at least one local-part char in every validator mode.
+      return /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
     }
     function validateEmail(value) {
-      if (value === undefined || value === null) {
+      if (typeof value !== 'string' || value.trim().length === 0) {
         return { ok: false, code: 'EMAIL_REQUIRED', field: 'email' };
       }
-      if (!useRegression && value.length === 0) {
-        return { ok: false, code: 'EMAIL_INVALID_LENGTH', field: 'email' };
-      }
-      if (value.length > 254) {
+      const email = value.trim();
+      if (email.length > 254) {
         return { ok: false, code: 'EMAIL_TOO_LONG', field: 'email' };
       }
-      if (!emailRegex().test(value)) {
+      if (!emailRegex().test(email)) {
         return { ok: false, code: 'EMAIL_INVALID_FORMAT', field: 'email' };
       }
       return { ok: true };
