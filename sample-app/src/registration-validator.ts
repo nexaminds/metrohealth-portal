@@ -66,18 +66,22 @@ export function validateSSN4(value: string): ValidationResult {
 
 // RFC 5322-lite. Intentionally pragmatic: we trust the verify-code step
 // to catch deliverability; we just block obviously malformed input here.
-const EMAIL_REGEX = /^[^\s@]*@[^\s@]+\.[^\s@]+$/;
+// The local-part must contain at least one non-space/non-@ character so
+// "@example.com" and empty strings cannot reach MRN linkage.
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function validateEmail(value: string): ValidationResult {
-  // Empty / null check: required field, never accept empty.
-  if (value === undefined || value === null) {
+export function validateEmail(value: unknown): ValidationResult {
+  // Empty / null / non-string check: required field, never accept malformed
+  // runtime payloads from clients before the MRN-linkage boundary.
+  if (typeof value !== "string" || value.trim().length === 0) {
     return { ok: false, code: "EMAIL_REQUIRED", field: "email" };
   }
+  const email = value.trim();
   // Length guard before regex (RFC 5322 max is 254).
-  if (value.length > 254) {
+  if (email.length > 254) {
     return { ok: false, code: "EMAIL_TOO_LONG", field: "email" };
   }
-  if (!EMAIL_REGEX.test(value)) {
+  if (!EMAIL_REGEX.test(email)) {
     return { ok: false, code: "EMAIL_INVALID_FORMAT", field: "email" };
   }
   return { ok: true };
@@ -116,7 +120,7 @@ export interface RegistrationStep1Input {
 }
 
 export interface RegistrationStep2Input {
-  email: string;
+  email: unknown;
   phone_mobile: string;
   zip: string;
 }
