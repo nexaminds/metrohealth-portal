@@ -136,7 +136,13 @@ export function validateStep1(input: RegistrationStep1Input): ValidationResult {
   return failed ?? { ok: true };
 }
 
-export function validateStep2(input: RegistrationStep2Input): ValidationResult {
+export function validateStep2(
+  input: RegistrationStep2Input | null | undefined
+): ValidationResult {
+  if (input === null || input === undefined) {
+    return { ok: false, code: "EMAIL_REQUIRED", field: "email" };
+  }
+
   const checks = [
     validateEmail(input.email),
     validatePhoneMobile(input.phone_mobile),
