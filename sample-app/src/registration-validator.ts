@@ -137,6 +137,10 @@ export function validateStep1(input: RegistrationStep1Input): ValidationResult {
 }
 
 export function validateStep2(input: RegistrationStep2Input): ValidationResult {
+  if (!input || typeof input !== "object") {
+    return { ok: false, code: "EMAIL_REQUIRED", field: "email" };
+  }
+
   const checks = [
     validateEmail(input.email),
     validatePhoneMobile(input.phone_mobile),
