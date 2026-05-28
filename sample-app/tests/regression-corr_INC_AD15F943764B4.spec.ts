@@ -19,7 +19,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const repoRoot = resolve(process.env.METROHEALTH_PORTAL_REPO ?? "/mnt/c/Users/Bernardo/metrohealth-portal");
+const repoRoot = resolve(process.env.METROHEALTH_PORTAL_REPO ?? process.cwd(), "..");
 const indexHtml = readFileSync(resolve(repoRoot, "public/index.html"), "utf8");
 const metricsServer = readFileSync(resolve(repoRoot, "metrics-server/server.js"), "utf8");
 
