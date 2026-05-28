@@ -55,6 +55,19 @@ const registerClientRejectionsTotal = new client.Counter({
   registers: [register],
 });
 
+const DOWNSTREAM_FAILURE_BY_INPUT_CLASS = Object.freeze({
+  empty: 'MRN_LINKAGE_FAILED',
+  empty_local_part: 'VERIFY_CODE_SEND_FAILED',
+});
+
+function verifiedDownstreamFailureCode(payload) {
+  if (!payload || typeof payload !== 'object') return null;
+  const buggyInputClass = String(payload.buggy_input_class || '');
+  const expectedErrorCode = DOWNSTREAM_FAILURE_BY_INPUT_CLASS[buggyInputClass];
+  if (!expectedErrorCode || payload.error_code !== expectedErrorCode) return null;
+  return expectedErrorCode;
+}
+
 // Exposed for human-friendly inspection
 const regressionToggleState = new client.Gauge({
   name: 'metrohealth_portal_regression_toggle_state',
@@ -86,10 +99,18 @@ app.post('/events', (req, res) => {
     case 'register_attempt':
       registerAttemptsTotal.inc({ ...labels, step: String(payload.step || 'unknown') });
       break;
-    case 'register_validation_failure':
-      // The regression signal. error_code captures the synthetic downstream code.
-      registerDownstreamFailuresTotal.inc({ ...labels, error_code: payload.error_code || 'MRN_LINKAGE_FAILED' });
+    case 'register_validation_failure': {
+      // Only count the downstream regression signal when the browser supplies
+      // the expected anomaly context. Stale/forged telemetry is preserved as a
+      // client rejection so it cannot page as MRN linkage.
+      const errorCode = verifiedDownstreamFailureCode(payload);
+      if (!errorCode) {
+        registerClientRejectionsTotal.inc({ ...labels, code: 'UNVERIFIED_VALIDATION_FAILURE' });
+        break;
+      }
+      registerDownstreamFailuresTotal.inc({ ...labels, error_code: errorCode });
       break;
+    }
     case 'register_client_rejection':
       registerClientRejectionsTotal.inc({ ...labels, code: payload.code || 'unknown' });
       break;
