@@ -19,7 +19,7 @@ groups:
               datasource:
                 type: prometheus
                 uid: prometheus
-              expr: sum(rate(metrohealth_portal_register_validation_failures_total[5m])) / clamp_min(sum(rate(metrohealth_portal_register_attempts_total[5m])), 0.001)
+              expr: (sum(rate(metrohealth_portal_register_validation_failures_total[5m])) or vector(0)) / clamp_min((sum(rate(metrohealth_portal_register_attempts_total[5m])) or vector(0)), 1)
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
@@ -41,12 +41,12 @@ groups:
               expression: A
               refId: C
               type: threshold
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 30s
         annotations:
           summary: MetroHealth patient portal registration validation error rate exceeded critical threshold
-          description: "Validation failure rate over the last 5 minutes exceeded the critical threshold of 0.10. Empty/malformed inputs are passing client validation and crashing downstream MRN linkage. PHI exposure: alert metadata only. Live value is in the alert payload as alerts[0].valueString."
+          description: "Numeric validation failure rate over the last 5 minutes exceeded the critical threshold of 0.10. Sparse/no-traffic registration counters are coerced to zero and do not page. PHI exposure: alert metadata only. Live value is in the alert payload as alerts[0].valueString."
           runbook_url: https://wiki.metrohealth.example.com/runbooks/patient-portal/register-validation-failures
           dashboard_url: http://localhost:3001/d/metrohealth-patient-portal/metrohealth-patient-portal
         labels:
