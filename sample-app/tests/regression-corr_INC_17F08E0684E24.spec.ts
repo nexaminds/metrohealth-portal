@@ -19,8 +19,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { handleRegister } from "../../../../../metrohealth-portal/sample-app/src/register";
-import { validateEmail, validateStep2 } from "../../../../../metrohealth-portal/sample-app/src/registration-validator";
+import { handleRegister } from "../src/register";
+import { validateEmail, validateStep2 } from "../src/registration-validator";
 
 const VALID_STEP1_IDENTITY = {
   first_name: "Synthetic",
