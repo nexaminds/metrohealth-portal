@@ -41,7 +41,7 @@ groups:
               expression: A
               refId: C
               type: threshold
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 30s
         annotations:

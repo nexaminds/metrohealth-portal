@@ -55,6 +55,16 @@ const registerClientRejectionsTotal = new client.Counter({
   registers: [register],
 });
 
+const baseRegisterLabels = { service: APP_NAME, handler: 'register', env: APP_ENV };
+
+function initializeRegistrationCounterSeries() {
+  registerAttemptsTotal.inc({ ...baseRegisterLabels, step: '2' }, 0);
+  registerDownstreamFailuresTotal.inc({ ...baseRegisterLabels, error_code: 'MRN_LINKAGE_FAILED' }, 0);
+  registerDownstreamFailuresTotal.inc({ ...baseRegisterLabels, error_code: 'VERIFY_CODE_SEND_FAILED' }, 0);
+}
+
+initializeRegistrationCounterSeries();
+
 // Exposed for human-friendly inspection
 const regressionToggleState = new client.Gauge({
   name: 'metrohealth_portal_regression_toggle_state',
