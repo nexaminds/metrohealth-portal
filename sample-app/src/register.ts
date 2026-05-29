@@ -7,7 +7,6 @@ import {
   validateStep2,
   RegistrationStep1Input,
   RegistrationStep2Input,
-  ValidationResult,
 } from "./registration-validator";
 
 export interface RegisterRequest {
@@ -23,12 +22,6 @@ export interface RegisterResponse {
   // Never echo back the user's input here — sanitize PHI.
 }
 
-type ValidationFailure = Extract<ValidationResult, { ok: false }>;
-
-function isValidationFailure(result: ValidationResult): result is ValidationFailure {
-  return result.ok === false;
-}
-
 export async function handleRegister(
   req: RegisterRequest
 ): Promise<RegisterResponse> {
@@ -37,7 +30,7 @@ export async function handleRegister(
   }
 
   const step1Result = validateStep1(req.step1);
-  if (isValidationFailure(step1Result)) {
+  if (!step1Result.ok) {
     return {
       status: "validation_error",
       error_code: step1Result.code,
@@ -46,7 +39,7 @@ export async function handleRegister(
   }
 
   const step2Result = validateStep2(req.step2);
-  if (isValidationFailure(step2Result)) {
+  if (!step2Result.ok) {
     return {
       status: "validation_error",
       error_code: step2Result.code,
