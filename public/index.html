@@ -917,9 +917,9 @@
 
     // ──────────────── Validators (preserve exports for the regression test) ────────────────
     function emailRegex() {
-      // Buggy version: + → * in local-part. Fixed: requires at least one local-part char.
+      // corr_INC_51399a7373225: regression-toggle path must reject empty email local parts.
       return useRegression
-        ? /^[A-Za-z0-9._%+-]*@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
+        ? /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
         : /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
     }
     function validateEmail(value) {
