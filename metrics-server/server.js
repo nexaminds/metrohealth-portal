@@ -81,6 +81,20 @@ app.post('/events', (req, res) => {
   if (!event || typeof event !== 'string') return res.status(400).json({ ok: false });
 
   const labels = { service: APP_NAME, handler: 'register', env: APP_ENV };
+  const email = typeof payload.email === 'string' ? payload.email.trim() : '';
+  const malformedRegistrationInput =
+    event === 'register_validation_failure' &&
+    (payload.buggy_input_class === 'empty' ||
+      payload.buggy_input_class === 'empty_local_part' ||
+      email.length === 0 ||
+      email.startsWith('@'));
+
+  // corr_INC_20260609T215528Z: malformed registration inputs are client rejections,
+  // not downstream MRN-linkage failures. Do not increment the Sev2 failure signal.
+  if (malformedRegistrationInput) {
+    registerClientRejectionsTotal.inc({ ...labels, code: 'EMAIL_INVALID_FORMAT' });
+    return res.status(202).json({ ok: true, accepted: false, reason: 'malformed_registration_input' });
+  }
 
   switch (event) {
     case 'register_attempt':
