@@ -62,6 +62,19 @@ const regressionToggleState = new client.Gauge({
   labelNames: ['service', 'env'],
   registers: [register],
 });
+
+const ALLOWED_VALIDATION_FAILURE_CODES = new Set([
+  'MRN_LINKAGE_FAILED',
+  'VERIFY_CODE_SEND_FAILED',
+]);
+
+function isTrustedValidationFailure(payload) {
+  return payload &&
+    payload.validation_passed === true &&
+    payload.validation_source === 'browser_step2_contact' &&
+    ALLOWED_VALIDATION_FAILURE_CODES.has(payload.error_code);
+}
+
 regressionToggleState.labels(APP_NAME, APP_ENV).set(0);
 
 // ── App ────────────────────────────────────────────────────────────────────
@@ -87,8 +100,12 @@ app.post('/events', (req, res) => {
       registerAttemptsTotal.inc({ ...labels, step: String(payload.step || 'unknown') });
       break;
     case 'register_validation_failure':
-      // The regression signal. error_code captures the synthetic downstream code.
-      registerDownstreamFailuresTotal.inc({ ...labels, error_code: payload.error_code || 'MRN_LINKAGE_FAILED' });
+      // The regression signal must come from the browser validator after it proves
+      // the input passed client validation. Drop direct/stale malformed emissions.
+      if (!isTrustedValidationFailure(payload)) {
+        return res.status(400).json({ ok: false, reason: 'untrusted_validation_failure' });
+      }
+      registerDownstreamFailuresTotal.inc({ ...labels, error_code: payload.error_code });
       break;
     case 'register_client_rejection':
       registerClientRejectionsTotal.inc({ ...labels, code: payload.code || 'unknown' });
