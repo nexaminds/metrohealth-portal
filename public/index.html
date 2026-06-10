@@ -917,9 +917,9 @@
 
     // ──────────────── Validators (preserve exports for the regression test) ────────────────
     function emailRegex() {
-      // Buggy version: + → * in local-part. Fixed: requires at least one local-part char.
+      // Regression-toggle compatibility path stays fixed: require at least one local-part char.
       return useRegression
-        ? /^[A-Za-z0-9._%+-]*@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
+        ? /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
         : /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
     }
     function validateEmail(value) {
@@ -1130,6 +1130,8 @@
         emitMetric('register_validation_failure', {
           error_code: emailVal.length === 0 ? 'MRN_LINKAGE_FAILED' : 'VERIFY_CODE_SEND_FAILED',
           buggy_input_class: emailVal.length === 0 ? 'empty' : 'empty_local_part',
+          validation_passed: emailCheck.ok === true,
+          validation_source: 'browser_step2_contact',
         });
         toast('We hit a snag verifying your contact info. Our team has been notified — try again in a minute.', 'warn');
         showStep(3);
